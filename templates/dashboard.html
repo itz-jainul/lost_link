@@ -1,0 +1,166 @@
+{% extends 'base.html' %}
+{% block title %}Dashboard — LostLink{% endblock %}
+{% block content %}
+
+<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.75rem;margin-bottom:1.5rem;">
+  <div>
+    <h1 style="font-size:1.75rem;font-weight:800;letter-spacing:-.03em;">👋 Hi, {{ user.name.split()[0] }}!</h1>
+    <p class="text-muted" style="font-size:.9rem;">Manage your reports and claims from here.</p>
+  </div>
+  <div style="display:flex;gap:.5rem;">
+    <a href="{{ url_for('report_missing') }}" class="btn btn-primary btn-sm">+ Report Missing</a>
+    <a href="{{ url_for('report_found') }}" class="btn btn-secondary btn-sm">+ Report Found</a>
+  </div>
+</div>
+
+<!-- Stats -->
+<div class="dash-stat-grid">
+  <div class="dash-stat-card">
+    <div class="dash-stat-num" style="color:var(--brand);">{{ items|length }}</div>
+    <div class="dash-stat-lbl">Total Reports</div>
+  </div>
+  <div class="dash-stat-card">
+    <div class="dash-stat-num" style="color:#0ea5e9;">{{ active_count }}</div>
+    <div class="dash-stat-lbl">Active</div>
+  </div>
+  <div class="dash-stat-card">
+    <div class="dash-stat-num" style="color:#10b981;">{{ claimed_count }}</div>
+    <div class="dash-stat-lbl">Claimed</div>
+  </div>
+  <div class="dash-stat-card">
+    <div class="dash-stat-num" style="color:#7c3aed;">{{ claims|length }}</div>
+    <div class="dash-stat-lbl">My Claims</div>
+  </div>
+  <div class="dash-stat-card">
+    <div class="dash-stat-num" style="color:#f59e0b;">{{ conversations|length }}</div>
+    <div class="dash-stat-lbl">Conversations</div>
+  </div>
+</div>
+
+<!-- Tabs -->
+<div class="tabs" id="dash-tabs">
+  <button class="tab active" onclick="switchTab(0)" id="tab-0">📋 My Reports</button>
+  <button class="tab" onclick="switchTab(1)" id="tab-1">📨 My Claims</button>
+  <button class="tab" onclick="switchTab(2)" id="tab-2">💬 Conversations</button>
+</div>
+
+<!-- Tab: Reports -->
+<div class="tab-panel active" id="panel-0">
+  {% if items %}
+    <div class="dash-table-card">
+      <table class="dash-table">
+        <thead>
+          <tr>
+            <th>Item</th>
+            <th>Type</th>
+            <th>Status</th>
+            <th>Reported</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for it in items %}
+            <tr>
+              <td>
+                <a href="{{ url_for('item_detail', item_id=it.id) }}" style="font-weight:600;color:var(--text);text-decoration:none;">{{ it.title }}</a>
+                <div style="font-size:.75rem;color:var(--text-muted);">{{ it.category }} · 📍 {{ it.location or '—' }}</div>
+              </td>
+              <td><span class="badge badge-{{ it.item_type }}">{{ it.item_type|capitalize }}</span></td>
+              <td><span class="badge {% if it.status=='claimed' %}badge-claimed{% elif it.status=='active' %}badge-active{% else %}badge-pending{% endif %}">{{ it.status|capitalize }}</span></td>
+              <td style="color:var(--text-muted);font-size:.8rem;">{{ it.date_reported.strftime('%b %d, %Y') }}</td>
+              <td>
+                <a href="{{ url_for('item_detail', item_id=it.id) }}" class="btn btn-sm btn-secondary">View</a>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% else %}
+    <div class="empty-state">
+      <div class="empty-state-icon">📭</div>
+      <h3 style="font-weight:700;">No reports yet</h3>
+      <p class="text-muted" style="margin:.5rem 0 1rem;">Start by reporting a missing or found item.</p>
+      <a href="{{ url_for('report_missing') }}" class="btn btn-primary">Report Missing Item</a>
+    </div>
+  {% endif %}
+</div>
+
+<!-- Tab: Claims -->
+<div class="tab-panel" id="panel-1">
+  {% if claims %}
+    <div class="dash-table-card">
+      <table class="dash-table">
+        <thead>
+          <tr><th>Item</th><th>Status</th><th>Submitted</th><th>Actions</th></tr>
+        </thead>
+        <tbody>
+          {% for c in claims %}
+            <tr>
+              <td>
+                <a href="{{ url_for('item_detail', item_id=c.item.id) }}" style="font-weight:600;color:var(--text);text-decoration:none;">{{ c.item.title }}</a>
+                <div style="font-size:.75rem;color:var(--text-muted);">{{ c.message[:60] }}{% if c.message|length > 60 %}…{% endif %}</div>
+              </td>
+              <td><span class="badge badge-{{ c.status }}">{{ c.status|capitalize }}</span></td>
+              <td style="color:var(--text-muted);font-size:.8rem;">{{ c.created_at.strftime('%b %d, %Y') }}</td>
+              <td>
+                {% if c.conversation %}
+                  <a href="{{ url_for('chat_page', conv_id=c.conversation.id) }}" class="btn btn-sm btn-primary">💬 Chat</a>
+                {% else %}
+                  <a href="{{ url_for('item_detail', item_id=c.item.id) }}" class="btn btn-sm btn-secondary">View</a>
+                {% endif %}
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% else %}
+    <div class="empty-state">
+      <div class="empty-state-icon">📨</div>
+      <h3 style="font-weight:700;">No claims yet</h3>
+      <p class="text-muted" style="margin:.5rem 0 1rem;">Browse items and submit a claim if you recognise something.</p>
+      <a href="{{ url_for('index') }}" class="btn btn-primary">Browse Items</a>
+    </div>
+  {% endif %}
+</div>
+
+<!-- Tab: Conversations -->
+<div class="tab-panel" id="panel-2">
+  {% if conversations %}
+    <div style="display:flex;flex-direction:column;gap:.75rem;">
+      {% for conv in conversations %}
+        <a href="{{ url_for('chat_page', conv_id=conv.id) }}"
+           style="display:flex;align-items:center;gap:1rem;padding:.85rem 1rem;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);text-decoration:none;color:inherit;transition:all var(--transition);"
+           onmouseover="this.style.borderColor='var(--brand)'" onmouseout="this.style.borderColor='var(--border)'">
+          <div class="chat-avatar" style="flex-shrink:0;">💬</div>
+          <div>
+            <div style="font-weight:600;font-size:.9rem;">Conversation #{{ conv.id }}</div>
+            <div style="font-size:.78rem;color:var(--text-muted);">
+              Claim #{{ conv.claim_id }} · Started {{ conv.created_at.strftime('%b %d, %Y') }}
+            </div>
+          </div>
+          <div style="margin-left:auto;color:var(--text-muted);font-size:.8rem;">
+            {{ conv.messages|length }} message{{ 's' if conv.messages|length != 1 }}
+          </div>
+        </a>
+      {% endfor %}
+    </div>
+  {% else %}
+    <div class="empty-state">
+      <div class="empty-state-icon">💬</div>
+      <h3 style="font-weight:700;">No conversations yet</h3>
+      <p class="text-muted">Conversations start when a claim is approved.</p>
+    </div>
+  {% endif %}
+</div>
+
+{% endblock %}
+{% block extra_js %}
+<script>
+function switchTab(n){
+  document.querySelectorAll('.tab').forEach((t,i)=>t.classList.toggle('active',i===n));
+  document.querySelectorAll('.tab-panel').forEach((p,i)=>p.classList.toggle('active',i===n));
+}
+</script>
+{% endblock %}

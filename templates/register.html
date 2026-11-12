@@ -1,0 +1,370 @@
+{% extends 'base.html' %}
+{% block title %}Create Account — LostLink{% endblock %}
+
+{% block full_content %}
+<style>
+  .auth-split {
+    min-height: 100vh;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+  @media (max-width: 768px) {
+    .auth-split { grid-template-columns: 1fr; }
+    .auth-split-panel { display: none; }
+  }
+
+  /* ── Left brand panel ── */
+  .auth-split-panel {
+    background: linear-gradient(145deg, #0f0c29, #1a1040, #24243e);
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 3rem 2.5rem;
+    text-align: center;
+  }
+  .auth-split-panel::before {
+    content: '';
+    position: absolute;
+    width: 500px; height: 500px;
+    background: radial-gradient(circle, rgba(99,102,241,.4) 0%, transparent 65%);
+    top: -120px; right: -120px;
+    animation: pulse 7s ease-in-out infinite alternate;
+  }
+  .auth-split-panel::after {
+    content: '';
+    position: absolute;
+    width: 400px; height: 400px;
+    background: radial-gradient(circle, rgba(244,63,94,.35) 0%, transparent 65%);
+    bottom: -80px; left: -80px;
+    animation: pulse 9s ease-in-out infinite alternate-reverse;
+  }
+  @keyframes pulse {
+    from { transform: scale(1); opacity: .7; }
+    to   { transform: scale(1.25); opacity: 1; }
+  }
+
+  .panel-logo {
+    font-size: 2.5rem;
+    font-weight: 900;
+    letter-spacing: -.04em;
+    background: linear-gradient(135deg, #fff 30%, #a5b4fc);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    position: relative; z-index: 1;
+    margin-bottom: .5rem;
+  }
+  .panel-tagline {
+    color: rgba(255,255,255,.55);
+    font-size: .95rem;
+    max-width: 280px;
+    line-height: 1.6;
+    position: relative; z-index: 1;
+    margin-bottom: 2.5rem;
+  }
+
+  /* Testimonial / stats section */
+  .panel-stats {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: .75rem;
+    position: relative; z-index: 1;
+    width: 100%;
+    max-width: 280px;
+    margin-bottom: 2rem;
+  }
+  .panel-stat-box {
+    background: rgba(255,255,255,.07);
+    border: 1px solid rgba(255,255,255,.12);
+    border-radius: .75rem;
+    padding: .85rem .75rem;
+    backdrop-filter: blur(8px);
+    text-align: center;
+  }
+  .panel-stat-val {
+    font-size: 1.4rem;
+    font-weight: 800;
+    color: #fff;
+    letter-spacing: -.03em;
+  }
+  .panel-stat-lbl {
+    font-size: .7rem;
+    color: rgba(255,255,255,.5);
+    margin-top: .15rem;
+  }
+
+  /* Testimonial */
+  .panel-testimonial {
+    position: relative; z-index: 1;
+    background: rgba(255,255,255,.07);
+    border: 1px solid rgba(255,255,255,.12);
+    border-radius: .75rem;
+    padding: 1rem;
+    backdrop-filter: blur(8px);
+    max-width: 280px;
+    text-align: left;
+  }
+  .panel-testimonial p {
+    color: rgba(255,255,255,.8);
+    font-size: .8rem;
+    line-height: 1.55;
+    margin-bottom: .6rem;
+    font-style: italic;
+  }
+  .panel-testimonial-author {
+    display: flex; align-items: center; gap: .5rem;
+  }
+  .panel-testimonial-avatar {
+    width: 1.8rem; height: 1.8rem;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--brand), #f97316);
+    display: flex; align-items: center; justify-content: center;
+    font-size: .75rem; font-weight: 700; color: #fff;
+  }
+  .panel-testimonial-name {
+    font-size: .75rem;
+    color: rgba(255,255,255,.6);
+    font-weight: 600;
+  }
+
+  /* ── Right form panel ── */
+  .auth-split-form {
+    background: var(--surface);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 3rem 2rem;
+  }
+  .auth-form-inner {
+    width: 100%;
+    max-width: 400px;
+  }
+
+  /* Row layout for grid fields */
+  .auth-row { display: grid; grid-template-columns: 1fr 1fr; gap: .75rem; }
+  @media (max-width: 480px) { .auth-row { grid-template-columns: 1fr; } }
+
+  /* Form elements */
+  .auth-field { margin-bottom: .9rem; }
+  .auth-label {
+    display: block;
+    font-size: .72rem;
+    font-weight: 700;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-bottom: .4rem;
+  }
+  .auth-input {
+    width: 100%;
+    padding: .72rem 1rem;
+    border: 1.5px solid var(--border);
+    border-radius: .6rem;
+    background: var(--surface2);
+    color: var(--text);
+    font-family: inherit;
+    font-size: .9rem;
+    outline: none;
+    transition: border-color .2s, box-shadow .2s, background .2s;
+  }
+  .auth-input:focus {
+    border-color: var(--brand);
+    background: var(--surface);
+    box-shadow: 0 0 0 4px rgba(244,63,94,.1);
+  }
+  .auth-input::placeholder { color: var(--text-muted); opacity: .6; }
+
+  /* Password strength bar */
+  .pw-strength { margin-top: .4rem; }
+  .pw-strength-bar {
+    height: 4px;
+    border-radius: 2px;
+    background: var(--border);
+    overflow: hidden;
+  }
+  .pw-strength-fill {
+    height: 100%;
+    width: 0%;
+    border-radius: 2px;
+    transition: width .3s, background .3s;
+  }
+  .pw-strength-label {
+    font-size: .7rem;
+    color: var(--text-muted);
+    margin-top: .3rem;
+  }
+
+  .auth-submit {
+    width: 100%;
+    padding: .85rem;
+    background: linear-gradient(135deg, #f43f5e, #e11d48);
+    color: #fff;
+    font-family: inherit;
+    font-size: .95rem;
+    font-weight: 700;
+    border: none;
+    border-radius: .65rem;
+    cursor: pointer;
+    box-shadow: 0 6px 20px rgba(244,63,94,.4);
+    transition: transform .15s, box-shadow .15s;
+    letter-spacing: .01em;
+    margin-top: .5rem;
+  }
+  .auth-submit:hover { transform: translateY(-2px); box-shadow: 0 10px 30px rgba(244,63,94,.5); }
+  .auth-submit:active { transform: translateY(0); }
+
+  .auth-terms {
+    font-size: .75rem;
+    color: var(--text-muted);
+    text-align: center;
+    margin-top: .85rem;
+    line-height: 1.5;
+  }
+
+  /* Dark-mode adjustments */
+  .dark .auth-split-form { background: #0f172a; }
+  .dark .auth-input { background: #1e293b; border-color: #334155; }
+  .dark .auth-input:focus { background: #263148; }
+</style>
+
+<div class="auth-split">
+
+  <!-- ── LEFT: Brand panel ── -->
+  <div class="auth-split-panel">
+    <div class="panel-logo">🔗 LostLink</div>
+    <p class="panel-tagline">Join thousands of students reuniting lost items on campus every day.</p>
+
+    <div class="panel-stats">
+      <div class="panel-stat-box">
+        <div class="panel-stat-val">500+</div>
+        <div class="panel-stat-lbl">Items Recovered</div>
+      </div>
+      <div class="panel-stat-box">
+        <div class="panel-stat-val">1.2k</div>
+        <div class="panel-stat-lbl">Active Users</div>
+      </div>
+      <div class="panel-stat-box">
+        <div class="panel-stat-val">95%</div>
+        <div class="panel-stat-lbl">Match Rate</div>
+      </div>
+      <div class="panel-stat-box">
+        <div class="panel-stat-val">Free</div>
+        <div class="panel-stat-lbl">Always</div>
+      </div>
+    </div>
+
+    <div class="panel-testimonial">
+      <p>"Found my lost ID card within 2 hours of posting! LostLink is amazing for our campus."</p>
+      <div class="panel-testimonial-author">
+        <div class="panel-testimonial-avatar">A</div>
+        <span class="panel-testimonial-name">Ananya S. · Student</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── RIGHT: Form panel ── -->
+  <div class="auth-split-form">
+    <div class="auth-form-inner">
+
+      <!-- Back link -->
+      <a href="{{ url_for('index') }}"
+         style="display:inline-flex;align-items:center;gap:.35rem;color:var(--text-muted);font-size:.8rem;text-decoration:none;margin-bottom:1.75rem;">
+        ← Back to home
+      </a>
+
+      <div style="margin-bottom:1.75rem;">
+        <h1 style="font-size:1.85rem;font-weight:900;letter-spacing:-.04em;margin-bottom:.3rem;">Create your account ✨</h1>
+        <p style="color:var(--text-muted);font-size:.875rem;">It's free. Always.</p>
+      </div>
+
+      <form method="post" id="register-form">
+        {{ form.hidden_tag() }}
+
+        <div class="auth-row">
+          <div class="auth-field">
+            <label class="auth-label" for="reg-name">Full Name</label>
+            {{ form.name(class="auth-input", placeholder="John Doe", id="reg-name", autocomplete="name") }}
+          </div>
+          <div class="auth-field">
+            <label class="auth-label" for="reg-phone">Phone <span style="opacity:.5;text-transform:none;font-weight:400;">(opt.)</span></label>
+            {{ form.phone(class="auth-input", placeholder="+91 98765…", id="reg-phone", autocomplete="tel") }}
+          </div>
+        </div>
+
+        <div class="auth-field">
+          <label class="auth-label" for="reg-email">Email address</label>
+          {{ form.email(class="auth-input", placeholder="you@college.edu", id="reg-email", autocomplete="email") }}
+        </div>
+
+        <div class="auth-field">
+          <label class="auth-label" for="reg-password">Password</label>
+          <div style="position:relative;">
+            {{ form.password(class="auth-input", placeholder="Min. 6 characters", id="reg-password", autocomplete="new-password", style="padding-right:2.75rem;") }}
+            <button type="button"
+                    style="position:absolute;right:.75rem;top:.75rem;background:none;border:none;cursor:pointer;color:var(--text-muted);font-size:.85rem;padding:0;"
+                    onclick="togglePw('reg-password',this)">👁</button>
+          </div>
+          <div class="pw-strength">
+            <div class="pw-strength-bar"><div class="pw-strength-fill" id="pw-fill"></div></div>
+            <div class="pw-strength-label" id="pw-label">Enter a password</div>
+          </div>
+        </div>
+
+        <button type="submit" class="auth-submit" id="reg-submit">Create Free Account →</button>
+
+        <p class="auth-terms">
+          By signing up, you agree to our community guidelines for campus use.
+        </p>
+      </form>
+
+      <div style="text-align:center;margin-top:1.5rem;font-size:.875rem;color:var(--text-muted);">
+        Already have an account?
+        <a href="{{ url_for('login') }}" style="color:var(--brand);font-weight:700;text-decoration:none;margin-left:.25rem;">Sign in →</a>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// Toggle password visibility
+function togglePw(inputId, btn){
+  const inp = document.getElementById(inputId);
+  if(inp.type === 'password'){ inp.type = 'text'; btn.textContent = '🙈'; }
+  else { inp.type = 'password'; btn.textContent = '👁'; }
+}
+
+// Password strength meter
+const pwInput = document.getElementById('reg-password');
+const fill    = document.getElementById('pw-fill');
+const label   = document.getElementById('pw-label');
+
+const levels = [
+  { min: 0,  max: 1,  width: '0%',   bg: 'transparent',                text: 'Enter a password' },
+  { min: 1,  max: 3,  width: '25%',  bg: '#f43f5e',                    text: 'Weak' },
+  { min: 3,  max: 5,  width: '55%',  bg: '#f59e0b',                    text: 'Fair' },
+  { min: 5,  max: 7,  width: '80%',  bg: '#10b981',                    text: 'Good' },
+  { min: 7,  max: 99, width: '100%', bg: '#059669',                    text: 'Strong 🎉' },
+];
+
+pwInput && pwInput.addEventListener('input', function(){
+  const v = this.value;
+  let score = 0;
+  if(v.length >= 6) score++;
+  if(v.length >= 10) score++;
+  if(/[A-Z]/.test(v)) score++;
+  if(/[0-9]/.test(v)) score++;
+  if(/[^a-zA-Z0-9]/.test(v)) score++;
+  if(v.length >= 14) score++;
+  const lvl = levels.find(l => score >= l.min && score < l.max) || levels[0];
+  fill.style.width = lvl.width;
+  fill.style.background = lvl.bg;
+  label.textContent = v.length ? lvl.text : 'Enter a password';
+  label.style.color = lvl.bg === 'transparent' ? 'var(--text-muted)' : lvl.bg;
+});
+</script>
+{% endblock %}

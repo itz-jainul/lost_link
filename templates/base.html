@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>{% block title %}LostLink — College Lost & Found{% endblock %}</title>
+  <meta name="description" content="{% block meta_desc %}LostLink helps you report and recover lost items on campus.{% endblock %}"/>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}"/>
+</head>
+<body>
+
+<!-- ── Header ─────────────────────────────────────────── -->
+<header class="ll-header">
+  <div class="container" style="display:flex;align-items:center;justify-content:space-between;padding-top:.75rem;padding-bottom:.75rem;">
+    <a href="{{ url_for('index') }}" class="ll-logo">🔗 LostLink</a>
+
+    <nav style="display:flex;align-items:center;gap:.25rem;flex-wrap:wrap;">
+      <a class="ll-nav-link" href="{{ url_for('index') }}">Home</a>
+      <a class="ll-nav-link" href="{{ url_for('report_missing') }}">Report Missing</a>
+      <a class="ll-nav-link" href="{{ url_for('report_found') }}">Report Found</a>
+
+      {% if user %}
+        <a class="ll-nav-link" href="{{ url_for('dashboard') }}">Dashboard</a>
+        <a class="ll-nav-link" href="{{ url_for('profile') }}">Profile</a>
+        {% if user.is_admin %}
+          <a class="ll-nav-link" href="{{ url_for('admin_panel') }}" style="color:#7c3aed;">Admin</a>
+        {% endif %}
+        <a href="{{ url_for('logout') }}" class="btn btn-primary btn-sm" style="margin-left:.25rem;">Logout</a>
+      {% else %}
+        <a class="ll-nav-link" href="{{ url_for('login') }}">Login</a>
+        <a href="{{ url_for('register') }}" class="btn btn-primary btn-sm" style="margin-left:.25rem;">Sign Up</a>
+      {% endif %}
+
+      <button id="dark-toggle" class="ll-btn-dark" aria-label="Toggle dark mode" style="margin-left:.25rem;">
+        <svg id="icon-moon" width="18" height="18" fill="currentColor" viewBox="0 0 20 20">
+          <path d="M17.293 13.293A8 8 0 116.707 2.707 7 7 0 1017.293 13.293z"/>
+        </svg>
+        <svg id="icon-sun" width="18" height="18" fill="currentColor" viewBox="0 0 20 20" style="display:none;">
+          <path fill-rule="evenodd" d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z" clip-rule="evenodd"/>
+        </svg>
+      </button>
+    </nav>
+  </div>
+</header>
+
+<!-- ── Flash Messages ──────────────────────────────────── -->
+{% with messages = get_flashed_messages(with_categories=true) %}
+  {% if messages %}
+    <div class="container" style="padding-top:.75rem;">
+      {% for category, msg in messages %}
+        {% set cls = 'flash-info' %}
+        {% if category == 'success' %}{% set cls = 'flash-success' %}{% endif %}
+        {% if category == 'warning' %}{% set cls = 'flash-warning' %}{% endif %}
+        {% if category == 'danger' or category == 'error' %}{% set cls = 'flash-danger' %}{% endif %}
+        <div class="flash {{ cls }}">
+          <span>{{ msg }}</span>
+          <button class="flash-close" onclick="this.parentElement.remove()">✕</button>
+        </div>
+      {% endfor %}
+    </div>
+  {% endif %}
+{% endwith %}
+
+<!-- ── Page Content ────────────────────────────────────── -->
+{% block full_content %}
+  <main class="container section">
+    {% block content %}{% endblock %}
+  </main>
+{% endblock %}
+
+<!-- ── Footer ─────────────────────────────────────────── -->
+<footer class="ll-footer">
+  <div class="container">
+    <p>© 2026 <strong>LostLink</strong> — Campus Lost &amp; Found Platform &nbsp;·&nbsp;
+       <a href="{{ url_for('report_missing') }}" style="color:var(--brand);">Report Missing</a> &nbsp;·&nbsp;
+       <a href="{{ url_for('report_found') }}" style="color:var(--brand);">Report Found</a>
+    </p>
+  </div>
+</footer>
+
+<script>
+  // Dark mode toggle
+  (function(){
+    const html = document.documentElement;
+    const btn  = document.getElementById('dark-toggle');
+    const moon = document.getElementById('icon-moon');
+    const sun  = document.getElementById('icon-sun');
+    function applyDark(on){
+      if(on){ html.classList.add('dark'); moon.style.display='none'; sun.style.display=''; }
+      else  { html.classList.remove('dark'); sun.style.display='none'; moon.style.display=''; }
+    }
+    applyDark(localStorage.getItem('ll_dark')==='1');
+    btn && btn.addEventListener('click', function(){
+      const on = !html.classList.contains('dark');
+      applyDark(on);
+      localStorage.setItem('ll_dark', on?'1':'0');
+    });
+  })();
+
+  // Auto-dismiss flash after 5s
+  setTimeout(()=>{
+    document.querySelectorAll('.flash').forEach(el => {
+      el.style.transition='opacity .4s'; el.style.opacity='0';
+      setTimeout(()=>el.remove(), 400);
+    });
+  }, 5000);
+</script>
+{% block extra_js %}{% endblock %}
+</body>
+</html>

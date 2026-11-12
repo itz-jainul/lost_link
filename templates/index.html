@@ -1,0 +1,122 @@
+{% extends 'base.html' %}
+{% block title %}LostLink — Find What's Lost{% endblock %}
+
+{% block full_content %}
+
+<!-- ── Hero ──────────────────────────────────────────────── -->
+<section class="ll-hero">
+  <div class="container" style="position:relative;z-index:1;">
+    <div class="ll-hero-tag">✨ Campus Lost &amp; Found Platform</div>
+    <h1>Reconnect with<br><span>What Matters</span></h1>
+    <p>Report missing items, discover found ones, and get matched automatically using smart AI-powered search.</p>
+    <div class="ll-hero-btns">
+      <a href="{{ url_for('report_missing') }}" class="btn btn-primary btn-lg">🔍 Report Missing</a>
+      <a href="{{ url_for('report_found') }}" class="btn btn-secondary btn-lg" style="background:rgba(255,255,255,.1);color:#fff;border-color:rgba(255,255,255,.2);">📦 Report Found</a>
+    </div>
+  </div>
+</section>
+
+<!-- ── Stats Strip ────────────────────────────────────────── -->
+<div class="ll-stat-strip">
+  <div class="ll-stat">
+    <div class="ll-stat-num" id="stat-total">{{ stats.total }}</div>
+    <div class="ll-stat-label">Items Reported</div>
+  </div>
+  <div class="ll-stat">
+    <div class="ll-stat-num" id="stat-resolved" style="background:linear-gradient(135deg,#10b981,#059669);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;">{{ stats.resolved }}</div>
+    <div class="ll-stat-label">Items Recovered</div>
+  </div>
+  <div class="ll-stat">
+    <div class="ll-stat-num" id="stat-users" style="background:linear-gradient(135deg,#0ea5e9,#6366f1);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;">{{ stats.users }}</div>
+    <div class="ll-stat-label">Registered Users</div>
+  </div>
+</div>
+
+<!-- ── Main Content ───────────────────────────────────────── -->
+<main class="container section">
+
+  <!-- Filter bar -->
+  <div class="search-bar">
+    <form method="get" action="{{ url_for('index') }}"
+          style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr auto;gap:.75rem;align-items:end;">
+      <div>
+        <label class="form-label">Search</label>
+        <input name="q" value="{{ request.args.get('q','') }}"
+               placeholder="Title or description…"
+               class="form-input" style="margin-bottom:0;"/>
+      </div>
+      <div>
+        <label class="form-label">Category</label>
+        <select name="category" class="form-input form-select">
+          <option value="">All Categories</option>
+          {% for c in ['Electronics','ID','Books','Clothing','Other'] %}
+            <option value="{{ c }}" {% if request.args.get('category')==c %}selected{% endif %}>{{ c }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div>
+        <label class="form-label">Location</label>
+        <input name="location" value="{{ request.args.get('location','') }}"
+               placeholder="Library, Block A…" class="form-input" style="margin-bottom:0;"/>
+      </div>
+      <div>
+        <label class="form-label">Type</label>
+        <select name="type" class="form-input form-select">
+          <option value="">All Types</option>
+          <option value="missing" {% if request.args.get('type')=='missing' %}selected{% endif %}>Missing</option>
+          <option value="found"   {% if request.args.get('type')=='found'   %}selected{% endif %}>Found</option>
+        </select>
+      </div>
+      <div>
+        <button type="submit" class="btn btn-primary" style="width:100%;">Filter</button>
+      </div>
+    </form>
+  </div>
+
+  <!-- Section heading -->
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.25rem;flex-wrap:wrap;gap:.5rem;">
+    <h2 style="font-size:1.35rem;font-weight:800;letter-spacing:-.02em;">Recent Reports</h2>
+    {% if request.args %}
+      <a href="{{ url_for('index') }}" class="btn btn-secondary btn-sm">✕ Clear filters</a>
+    {% endif %}
+  </div>
+
+  {% if items %}
+    <div class="grid-items">
+      {% for it in items %}
+        <article class="card fade-in">
+          {% if it.image_filename %}
+            <img src="{{ url_for('uploaded_file', filename=it.image_filename) }}"
+                 alt="{{ it.title }}" class="card-img"/>
+          {% else %}
+            <div class="card-img-placeholder">
+              {{ '📱' if it.category=='Electronics' else '🪪' if it.category=='ID' else '📚' if it.category=='Books' else '👕' if it.category=='Clothing' else '📦' }}
+            </div>
+          {% endif %}
+          <div class="card-body">
+            <a href="{{ url_for('item_detail', item_id=it.id) }}" class="card-title">{{ it.title }}</a>
+            <div class="card-meta">{{ it.category or '—' }} · {{ it.date_reported.strftime('%b %d, %Y') }}{% if it.location %} · 📍 {{ it.location }}{% endif %}</div>
+            <p class="card-desc">{{ it.description or 'No description provided.' }}</p>
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-top:.85rem;">
+              <span class="badge badge-{{ it.item_type }}">
+                {{ '🔍' if it.item_type=='missing' else '✅' }} {{ it.item_type|capitalize }}
+              </span>
+              <span class="badge {% if it.status=='claimed' %}badge-claimed{% elif it.status=='active' %}badge-active{% else %}badge-pending{% endif %}">
+                {{ it.status|capitalize }}
+              </span>
+            </div>
+          </div>
+        </article>
+      {% endfor %}
+    </div>
+  {% else %}
+    <div class="empty-state">
+      <div class="empty-state-icon">🔎</div>
+      <h3 style="font-weight:700;margin-bottom:.4rem;">No reports found</h3>
+      <p class="text-muted" style="margin-bottom:1.25rem;">Be the first to report a missing or found item.</p>
+      <a href="{{ url_for('report_missing') }}" class="btn btn-primary">Report Missing Item</a>
+    </div>
+  {% endif %}
+
+</main>
+{% endblock %}

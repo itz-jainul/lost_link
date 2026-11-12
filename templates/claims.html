@@ -1,0 +1,46 @@
+{% extends 'base.html' %}
+{% block title %}Claims — LostLink Admin{% endblock %}
+{% block content %}
+<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.5rem;flex-wrap:wrap;gap:.75rem;">
+  <div>
+    <h1 style="font-size:1.5rem;font-weight:800;letter-spacing:-.02em;">📨 All Claims</h1>
+    <p class="text-muted" style="font-size:.875rem;">Review and action pending claims.</p>
+  </div>
+  <a href="{{ url_for('admin_panel') }}" class="btn btn-secondary btn-sm">← Admin Panel</a>
+</div>
+
+<div class="dash-table-card">
+  <div style="overflow-x:auto;">
+    <table class="dash-table">
+      <thead>
+        <tr>
+          <th>ID</th><th>Item</th><th>Claimant</th><th>Message</th><th>Proof</th><th>Status</th><th>Date</th><th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for c in claims %}
+          <tr>
+            <td style="color:var(--text-muted);font-size:.8rem;">#{{ c.id }}</td>
+            <td><a href="{{ url_for('item_detail', item_id=c.item.id) }}" style="font-weight:600;color:var(--text);text-decoration:none;">{{ c.item.title }}</a></td>
+            <td style="font-size:.85rem;color:var(--text-muted);">{{ c.claimant.email if c.claimant else '—' }}</td>
+            <td style="font-size:.8rem;max-width:180px;">{{ c.message[:80] }}{% if c.message|length > 80 %}…{% endif %}</td>
+            <td style="font-size:.8rem;color:var(--text-muted);max-width:120px;">{{ (c.proof or '—')[:50] }}</td>
+            <td><span class="badge badge-{{ c.status }}">{{ c.status|capitalize }}</span></td>
+            <td style="font-size:.8rem;color:var(--text-muted);">{{ c.created_at.strftime('%b %d, %Y') }}</td>
+            <td>
+              <div style="display:flex;gap:.3rem;">
+                <form method="post" action="{{ url_for('claim_action', claim_id=c.id) }}">
+                  <button name="action" value="approve" class="btn btn-sm btn-success">✔ Approve</button>
+                </form>
+                <form method="post" action="{{ url_for('claim_action', claim_id=c.id) }}">
+                  <button name="action" value="reject" class="btn btn-sm" style="background:rgba(244,63,94,.1);color:var(--brand);border:1px solid rgba(244,63,94,.2);">✕ Reject</button>
+                </form>
+              </div>
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

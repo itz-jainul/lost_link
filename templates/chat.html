@@ -1,0 +1,118 @@
+{% extends 'base.html' %}
+{% block title %}Chat — LostLink{% endblock %}
+{% block content %}
+<div style="margin-bottom:1rem;">
+  <a href="{{ url_for('dashboard') }}" style="color:var(--text-muted);font-size:.875rem;text-decoration:none;">← Back to Dashboard</a>
+</div>
+
+<div class="chat-wrap">
+  <!-- Header -->
+  <div class="chat-header">
+    <div class="chat-avatar">💬</div>
+    <div>
+      <div style="font-weight:700;font-size:.95rem;">Conversation #{{ conv.id }}</div>
+      <div style="font-size:.75rem;color:var(--text-muted);">Regarding Claim #{{ conv.claim_id }}</div>
+    </div>
+    <div style="margin-left:auto;">
+      <a href="{{ url_for('item_detail', item_id=conv.claim.item_id) }}" class="btn btn-secondary btn-sm">View Item</a>
+    </div>
+  </div>
+
+  <!-- Messages -->
+  <div class="chat-box" id="messages">
+    {% for m in conv.messages %}
+      <div class="chat-msg {% if m.sender_id == user.id %}chat-msg-mine{% endif %}">
+        <div class="chat-meta">{{ m.sender.name if m.sender else 'User' }} · {{ m.created_at.strftime('%b %d, %H:%M') }}</div>
+        <div class="chat-bubble">{{ m.body }}</div>
+      </div>
+    {% endfor %}
+    {% if not conv.messages %}
+      <div style="text-align:center;color:var(--text-muted);font-size:.875rem;padding:3rem 1rem;">
+        <div style="font-size:2rem;margin-bottom:.5rem;">💬</div>
+        No messages yet. Start the conversation!
+      </div>
+    {% endif %}
+  </div>
+
+  <!-- Input -->
+  <div class="chat-footer">
+    <form id="chat-form" onsubmit="return false;" style="display:flex;gap:.6rem;align-items:center;">
+      {{ form.hidden_tag() }}
+      {{ form.body(class="form-input", placeholder="Write a message…", id="chat-input", style="flex:1;margin-bottom:0;") }}
+      <button id="send-btn" class="btn btn-primary" style="flex-shrink:0;">Send ↗</button>
+    </form>
+  </div>
+</div>
+
+<script>
+const convId = {{ conv.id }};
+const userId = {{ user.id }};
+const messagesEl = document.getElementById('messages');
+
+function createMsgEl(m){
+  const isMine = m.sender_id === userId;
+  const wrap = document.createElement('div');
+  wrap.className = 'chat-msg' + (isMine ? ' chat-msg-mine' : '');
+  const meta = document.createElement('div');
+  meta.className = 'chat-meta';
+  meta.textContent = `${m.sender_name} · ${new Date(m.created_at).toLocaleString('en-GB',{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'})}`;
+  const bubble = document.createElement('div');
+  bubble.className = 'chat-bubble';
+  bubble.textContent = m.body;
+  wrap.appendChild(meta);
+  wrap.appendChild(bubble);
+  return wrap;
+}
+
+// Scroll to bottom
+function scrollBottom(){ messagesEl.scrollTop = messagesEl.scrollHeight; }
+scrollBottom();
+
+// Polling
+let lastTs = null;
+async function poll(){
+  const url = `/api/chat/${convId}/messages` + (lastTs ? `?since=${encodeURIComponent(lastTs)}` : '');
+  try {
+    const r = await fetch(url);
+    const d = await r.json();
+    if(d.messages && d.messages.length){
+      d.messages.forEach(m => {
+        const empty = messagesEl.querySelector('[style*="padding:3rem"]');
+        if(empty) empty.remove();
+        messagesEl.appendChild(createMsgEl(m));
+        lastTs = m.created_at;
+      });
+      scrollBottom();
+    }
+  } catch(e){}
+}
+setInterval(poll, 3000);
+
+// Send
+document.getElementById('send-btn').addEventListener('click', async ()=>{
+  const inp = document.getElementById('chat-input');
+  const text = inp.value.trim();
+  if(!text) return;
+  inp.value = '';
+  try {
+    const r = await fetch(`/api/chat/${convId}/send`, {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({body: text})
+    });
+    const d = await r.json();
+    if(d.ok){
+      const empty = messagesEl.querySelector('[style*="padding:3rem"]');
+      if(empty) empty.remove();
+      messagesEl.appendChild(createMsgEl(d.message));
+      lastTs = d.message.created_at;
+      scrollBottom();
+    }
+  } catch(e){}
+});
+
+document.getElementById('chat-input').addEventListener('keydown', e => {
+  if(e.key==='Enter' && !e.shiftKey){ e.preventDefault(); document.getElementById('send-btn').click(); }
+});
+</script>
+{% endblock %}

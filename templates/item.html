@@ -1,0 +1,152 @@
+{% extends 'base.html' %}
+{% block title %}{{ item.title }} — LostLink{% endblock %}
+{% block content %}
+<div style="margin-bottom:1rem;">
+  <a href="{{ url_for('index') }}" style="color:var(--text-muted);font-size:.875rem;text-decoration:none;">← Back to listings</a>
+</div>
+
+<div style="display:grid;grid-template-columns:1fr;gap:1.5rem;">
+
+  <!-- Left: Image + Description -->
+  <div style="display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1fr);gap:1.5rem;align-items:start;">
+    <div>
+      {% if item.image_filename %}
+        <img src="{{ url_for('uploaded_file', filename=item.image_filename) }}"
+             alt="{{ item.title }}" class="item-hero-img"/>
+      {% else %}
+        <div class="item-hero-placeholder">
+          <span style="font-size:4rem;">
+            {{ '📱' if item.category=='Electronics' else '🪪' if item.category=='ID' else '📚' if item.category=='Books' else '👕' if item.category=='Clothing' else '📦' }}
+          </span>
+          <p style="font-size:.875rem;margin-top:.5rem;">No image uploaded</p>
+        </div>
+      {% endif %}
+
+      <!-- Description card -->
+      <div class="card" style="margin-top:1.25rem;">
+        <div class="card-body">
+          <h2 style="font-size:1.5rem;font-weight:800;letter-spacing:-.02em;margin-bottom:.5rem;">{{ item.title }}</h2>
+          <div style="display:flex;gap:.5rem;flex-wrap:wrap;margin-bottom:1rem;">
+            <span class="badge badge-{{ item.item_type }}">{{ '🔍' if item.item_type=='missing' else '✅' }} {{ item.item_type|capitalize }}</span>
+            <span class="badge {% if item.status=='claimed' %}badge-claimed{% elif item.status=='active' %}badge-active{% else %}badge-pending{% endif %}">{{ item.status|capitalize }}</span>
+            {% if item.is_verified %}<span class="badge badge-approved">✔ Verified</span>{% endif %}
+          </div>
+          <p style="color:var(--text-muted);line-height:1.7;font-size:.9rem;">{{ item.description or 'No description provided.' }}</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right: Details + Claim -->
+    <div style="display:flex;flex-direction:column;gap:1rem;">
+      <!-- Details -->
+      <div class="card">
+        <div class="card-body">
+          <h3 style="font-size:1rem;font-weight:700;margin-bottom:1rem;padding-bottom:.75rem;border-bottom:1px solid var(--border);">📋 Item Details</h3>
+          <div class="detail-row"><span class="detail-label">📁 Category</span> {{ item.category or '—' }}</div>
+          <div class="detail-row"><span class="detail-label">📍 Location</span> {{ item.location or '—' }}</div>
+          <div class="detail-row"><span class="detail-label">📅 Date</span> {{ item.date_lost_found.strftime('%B %d, %Y') if item.date_lost_found else '—' }}</div>
+          <div class="detail-row"><span class="detail-label">🕐 Reported</span> {{ item.date_reported.strftime('%b %d, %Y %H:%M') }}</div>
+          <div class="detail-row"><span class="detail-label">👤 Reporter</span> {{ item.reporter.name if item.reporter else 'Anonymous' }}</div>
+          {% if item.contact_details %}
+          <div class="detail-row"><span class="detail-label">📞 Contact</span> {{ item.contact_details }}</div>
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- Claim form -->
+      <div class="card">
+        <div class="card-body">
+          <h3 style="font-size:1rem;font-weight:700;margin-bottom:1rem;">🙋 Submit a Claim</h3>
+          {% if item.status == 'claimed' %}
+            <div style="background:rgba(139,92,246,.08);border:1px solid rgba(139,92,246,.25);border-radius:.5rem;padding:.75rem 1rem;color:#7c3aed;font-size:.875rem;">
+              ✔ This item has already been claimed.
+            </div>
+          {% elif user %}
+            <form method="post" style="display:flex;flex-direction:column;gap:.85rem;">
+              {{ claim_form.hidden_tag() }}
+              <div>
+                <label class="form-label">Your message</label>
+                {{ claim_form.message(class="form-textarea", placeholder="Describe how this item belongs to you…", id="claim-message") }}
+              </div>
+              <div>
+                <label class="form-label">Proof <span style="text-transform:none;font-weight:400;">(optional)</span></label>
+                {{ claim_form.proof(class="form-textarea", placeholder="Serial number, unique marks, receipt…", id="claim-proof") }}
+              </div>
+              <button type="submit" class="btn btn-primary" style="justify-content:center;" id="claim-submit">Submit Claim</button>
+            </form>
+          {% else %}
+            <p style="color:var(--text-muted);font-size:.875rem;margin-bottom:.75rem;">You must be logged in to submit a claim.</p>
+            <a href="{{ url_for('login') }}" class="btn btn-primary" style="justify-content:center;display:flex;">Login to Claim</a>
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- Owner actions -->
+      {% if user and item.user_id == user.id %}
+        <div class="card">
+          <div class="card-body">
+            <h3 style="font-size:.9rem;font-weight:700;margin-bottom:.75rem;">⚙️ Manage Your Report</h3>
+            <form method="post" action="{{ url_for('delete_item', item_id=item.id) }}"
+                  onsubmit="return confirm('Remove this item listing?')">
+              <button type="submit" class="btn btn-sm" style="background:rgba(244,63,94,.1);color:var(--brand);border:1px solid rgba(244,63,94,.25);">
+                🗑 Remove Listing
+              </button>
+            </form>
+          </div>
+        </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Matches -->
+  {% if matches %}
+    <div class="card" style="margin-top:.5rem;">
+      <div class="card-body">
+        <h3 style="font-size:1rem;font-weight:700;margin-bottom:1rem;">🤖 Smart Matches ({{ matches|length }})</h3>
+        <p style="color:var(--text-muted);font-size:.8rem;margin-bottom:1rem;">These items on the platform may be related to yours.</p>
+        <div style="display:flex;flex-direction:column;gap:.6rem;">
+          {% for m in matches %}
+            <a href="{{ url_for('item_detail', item_id=m.item.id) }}" class="match-card">
+              {% if m.item.image_filename %}
+                <img src="{{ url_for('uploaded_file', filename=m.item.image_filename) }}" class="match-thumb" alt="{{ m.item.title }}"/>
+              {% else %}
+                <div class="match-thumb-placeholder">📦</div>
+              {% endif %}
+              <div>
+                <div style="font-weight:600;font-size:.875rem;">{{ m.item.title }}</div>
+                <div style="font-size:.75rem;color:var(--text-muted);">{{ m.item.category }} · {{ m.item.location or 'Unknown location' }}</div>
+              </div>
+              <div class="match-score">{{ (m.score * 100)|int }}% match</div>
+            </a>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+  {% endif %}
+
+  <!-- Conversations -->
+  {% if user %}
+    {% set my_convs = item.claims | selectattr('conversation') | list %}
+    {% if my_convs %}
+      <div class="card">
+        <div class="card-body">
+          <h3 style="font-size:1rem;font-weight:700;margin-bottom:1rem;">💬 Conversations</h3>
+          {% for c in item.claims %}
+            {% if c.conversation and (user.id == c.conversation.reporter_id or user.id == c.conversation.claimant_id) %}
+              <a href="{{ url_for('chat_page', conv_id=c.conversation.id) }}" class="match-card" style="text-decoration:none;color:inherit;">
+                <div class="match-thumb-placeholder">💬</div>
+                <div>
+                  <div style="font-weight:600;font-size:.875rem;">Conversation #{{ c.conversation.id }}</div>
+                  <div style="font-size:.75rem;color:var(--text-muted);">Claim status: {{ c.status }}</div>
+                </div>
+                <span class="badge badge-{{ c.status }}">{{ c.status }}</span>
+              </a>
+            {% endif %}
+          {% endfor %}
+        </div>
+      </div>
+    {% endif %}
+  {% endif %}
+
+</div>
+{% endblock %}

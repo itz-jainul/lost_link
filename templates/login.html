@@ -1,0 +1,276 @@
+{% extends 'base.html' %}
+{% block title %}Sign In — LostLink{% endblock %}
+
+{% block full_content %}
+<style>
+  .auth-split {
+    min-height: 100vh;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+  @media (max-width: 768px) {
+    .auth-split { grid-template-columns: 1fr; }
+    .auth-split-panel { display: none; }
+  }
+
+  /* ── Left brand panel ── */
+  .auth-split-panel {
+    background: linear-gradient(145deg, #0f0c29, #302b63, #24243e);
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 3rem 2.5rem;
+    text-align: center;
+  }
+  .auth-split-panel::before {
+    content: '';
+    position: absolute;
+    width: 500px; height: 500px;
+    background: radial-gradient(circle, rgba(244,63,94,.35) 0%, transparent 65%);
+    top: -100px; left: -100px;
+    animation: pulse 6s ease-in-out infinite alternate;
+  }
+  .auth-split-panel::after {
+    content: '';
+    position: absolute;
+    width: 400px; height: 400px;
+    background: radial-gradient(circle, rgba(99,102,241,.3) 0%, transparent 65%);
+    bottom: -80px; right: -80px;
+    animation: pulse 8s ease-in-out infinite alternate-reverse;
+  }
+  @keyframes pulse {
+    from { transform: scale(1); opacity: .7; }
+    to   { transform: scale(1.2); opacity: 1; }
+  }
+
+  .panel-logo {
+    font-size: 2.5rem;
+    font-weight: 900;
+    letter-spacing: -.04em;
+    background: linear-gradient(135deg, #fff 30%, #fda4af);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    position: relative; z-index: 1;
+    margin-bottom: .5rem;
+  }
+  .panel-tagline {
+    color: rgba(255,255,255,.55);
+    font-size: .95rem;
+    max-width: 280px;
+    line-height: 1.6;
+    position: relative; z-index: 1;
+    margin-bottom: 3rem;
+  }
+
+  /* Floating feature pills */
+  .panel-features {
+    display: flex;
+    flex-direction: column;
+    gap: .75rem;
+    position: relative; z-index: 1;
+    width: 100%;
+    max-width: 280px;
+  }
+  .panel-feat {
+    display: flex;
+    align-items: center;
+    gap: .75rem;
+    background: rgba(255,255,255,.07);
+    border: 1px solid rgba(255,255,255,.12);
+    border-radius: .75rem;
+    padding: .75rem 1rem;
+    backdrop-filter: blur(8px);
+    transition: background .2s;
+  }
+  .panel-feat:hover { background: rgba(255,255,255,.12); }
+  .panel-feat-icon {
+    width: 2rem; height: 2rem;
+    border-radius: .5rem;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1rem; flex-shrink: 0;
+  }
+  .panel-feat-text { color: rgba(255,255,255,.85); font-size: .8rem; font-weight: 500; text-align: left; }
+
+  /* ── Right form panel ── */
+  .auth-split-form {
+    background: var(--surface);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 3rem 2rem;
+  }
+  .auth-form-inner {
+    width: 100%;
+    max-width: 400px;
+  }
+
+  /* Form elements */
+  .auth-field { margin-bottom: 1.1rem; }
+  .auth-label {
+    display: block;
+    font-size: .72rem;
+    font-weight: 700;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-bottom: .45rem;
+  }
+  .auth-input {
+    width: 100%;
+    padding: .75rem 1rem;
+    border: 1.5px solid var(--border);
+    border-radius: .6rem;
+    background: var(--surface2);
+    color: var(--text);
+    font-family: inherit;
+    font-size: .9rem;
+    outline: none;
+    transition: border-color .2s, box-shadow .2s, background .2s;
+  }
+  .auth-input:focus {
+    border-color: var(--brand);
+    background: var(--surface);
+    box-shadow: 0 0 0 4px rgba(244,63,94,.1);
+  }
+  .auth-input::placeholder { color: var(--text-muted); opacity: .6; }
+
+  .auth-submit {
+    width: 100%;
+    padding: .85rem;
+    background: linear-gradient(135deg, #f43f5e, #e11d48);
+    color: #fff;
+    font-family: inherit;
+    font-size: .95rem;
+    font-weight: 700;
+    border: none;
+    border-radius: .65rem;
+    cursor: pointer;
+    box-shadow: 0 6px 20px rgba(244,63,94,.4);
+    transition: transform .15s, box-shadow .15s;
+    letter-spacing: .01em;
+    margin-top: .5rem;
+  }
+  .auth-submit:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 30px rgba(244,63,94,.5);
+  }
+  .auth-submit:active { transform: translateY(0); }
+
+  .auth-divider {
+    display: flex; align-items: center; gap: .75rem;
+    margin: 1.25rem 0;
+    color: var(--text-muted); font-size: .78rem;
+  }
+  .auth-divider::before, .auth-divider::after {
+    content: ''; flex: 1;
+    height: 1px; background: var(--border);
+  }
+
+  .auth-footer-links {
+    display: flex;
+    justify-content: space-between;
+    font-size: .82rem;
+    margin-top: 1rem;
+    color: var(--text-muted);
+  }
+  .auth-footer-links a { color: var(--brand); text-decoration: none; font-weight: 600; }
+  .auth-footer-links a:hover { text-decoration: underline; }
+
+  /* Dark-mode adjustments */
+  .dark .auth-split-form { background: #0f172a; }
+  .dark .auth-input { background: #1e293b; border-color: #334155; }
+  .dark .auth-input:focus { background: #263148; }
+</style>
+
+<div class="auth-split">
+
+  <!-- ── LEFT: Brand panel ── -->
+  <div class="auth-split-panel">
+    <div class="panel-logo">🔗 LostLink</div>
+    <p class="panel-tagline">Your campus lost &amp; found platform. Report, discover, and recover items with ease.</p>
+
+    <div class="panel-features">
+      <div class="panel-feat">
+        <div class="panel-feat-icon" style="background:rgba(244,63,94,.25);">🔍</div>
+        <div class="panel-feat-text">Smart AI-powered item matching</div>
+      </div>
+      <div class="panel-feat">
+        <div class="panel-feat-icon" style="background:rgba(16,185,129,.25);">✅</div>
+        <div class="panel-feat-text">Instant found item notifications</div>
+      </div>
+      <div class="panel-feat">
+        <div class="panel-feat-icon" style="background:rgba(99,102,241,.25);">💬</div>
+        <div class="panel-feat-text">Secure in-app chat with reporters</div>
+      </div>
+      <div class="panel-feat">
+        <div class="panel-feat-icon" style="background:rgba(245,158,11,.25);">🛡️</div>
+        <div class="panel-feat-text">Verified claims &amp; admin review</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── RIGHT: Form panel ── -->
+  <div class="auth-split-form">
+    <div class="auth-form-inner">
+
+      <!-- Back link -->
+      <a href="{{ url_for('index') }}"
+         style="display:inline-flex;align-items:center;gap:.35rem;color:var(--text-muted);font-size:.8rem;text-decoration:none;margin-bottom:2rem;">
+        ← Back to home
+      </a>
+
+      <div style="margin-bottom:2rem;">
+        <h1 style="font-size:1.9rem;font-weight:900;letter-spacing:-.04em;margin-bottom:.3rem;">Welcome back 👋</h1>
+        <p style="color:var(--text-muted);font-size:.9rem;">Sign in to continue to your LostLink account.</p>
+      </div>
+
+      <form method="post" id="login-form">
+        {{ form.hidden_tag() }}
+
+        <div class="auth-field">
+          <label class="auth-label" for="login-email">Email address</label>
+          {{ form.email(class="auth-input", placeholder="you@college.edu", id="login-email", autocomplete="email") }}
+        </div>
+
+        <div class="auth-field">
+          <label class="auth-label" for="login-password">Password</label>
+          <div style="position:relative;">
+            {{ form.password(class="auth-input", placeholder="Enter your password", id="login-password", autocomplete="current-password", style="padding-right:2.75rem;") }}
+            <button type="button" id="toggle-pw"
+                    style="position:absolute;right:.75rem;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--text-muted);font-size:.85rem;padding:0;"
+                    onclick="togglePw('login-password','toggle-pw')">👁</button>
+          </div>
+        </div>
+
+        <div style="text-align:right;margin-top:-.5rem;margin-bottom:1.25rem;">
+          <a href="{{ url_for('reset_request') }}" style="font-size:.8rem;color:var(--brand);text-decoration:none;font-weight:600;">Forgot password?</a>
+        </div>
+
+        <button type="submit" class="auth-submit" id="login-submit">Sign In →</button>
+      </form>
+
+      <div class="auth-divider">or</div>
+
+      <div style="text-align:center;font-size:.875rem;color:var(--text-muted);">
+        Don't have an account?
+        <a href="{{ url_for('register') }}" style="color:var(--brand);font-weight:700;text-decoration:none;margin-left:.25rem;">Create one free →</a>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+function togglePw(inputId, btnId){
+  const inp = document.getElementById(inputId);
+  const btn = document.getElementById(btnId);
+  if(inp.type === 'password'){ inp.type = 'text'; btn.textContent = '🙈'; }
+  else { inp.type = 'password'; btn.textContent = '👁'; }
+}
+</script>
+{% endblock %}

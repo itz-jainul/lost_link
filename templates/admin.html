@@ -1,0 +1,137 @@
+{% extends 'base.html' %}
+{% block title %}Admin Panel — LostLink{% endblock %}
+{% block content %}
+
+<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.75rem;margin-bottom:1.75rem;">
+  <div>
+    <h1 style="font-size:1.75rem;font-weight:900;letter-spacing:-.03em;">⚙️ Admin Panel</h1>
+    <p class="text-muted" style="font-size:.875rem;">Platform overview and management.</p>
+  </div>
+</div>
+
+<!-- Stats -->
+<div class="admin-stat-grid">
+  <div class="admin-stat">
+    <div class="admin-stat-num" style="color:var(--brand);">{{ stats.total_items }}</div>
+    <div class="admin-stat-lbl">Total Items</div>
+  </div>
+  <div class="admin-stat">
+    <div class="admin-stat-num" style="color:#0ea5e9;">{{ stats.active_items }}</div>
+    <div class="admin-stat-lbl">Active</div>
+  </div>
+  <div class="admin-stat">
+    <div class="admin-stat-num" style="color:#10b981;">{{ stats.claimed_items }}</div>
+    <div class="admin-stat-lbl">Claimed</div>
+  </div>
+  <div class="admin-stat">
+    <div class="admin-stat-num" style="color:#7c3aed;">{{ stats.total_users }}</div>
+    <div class="admin-stat-lbl">Users</div>
+  </div>
+  <div class="admin-stat">
+    <div class="admin-stat-num" style="color:#f59e0b;">{{ stats.pending_claims }}</div>
+    <div class="admin-stat-lbl">Pending Claims</div>
+  </div>
+</div>
+
+<!-- Tabs -->
+<div class="tabs">
+  <button class="tab active" onclick="switchTab(0)">📋 All Items ({{ items|length }})</button>
+  <button class="tab" onclick="switchTab(1)">👥 Users ({{ users|length }})</button>
+  <button class="tab" onclick="switchTab(2)">📨 Claims ({{ claims|length }})</button>
+</div>
+
+<!-- Items tab -->
+<div class="tab-panel active" id="ap-0">
+  <div class="dash-table-card">
+    <div class="dash-table-header">All Reports</div>
+    <div style="overflow-x:auto;">
+      <table class="dash-table">
+        <thead>
+          <tr><th>ID</th><th>Title</th><th>Type</th><th>Reporter</th><th>Status</th><th>Date</th><th>Actions</th></tr>
+        </thead>
+        <tbody>
+          {% for it in items %}
+            <tr>
+              <td style="color:var(--text-muted);font-size:.8rem;">#{{ it.id }}</td>
+              <td><a href="{{ url_for('item_detail', item_id=it.id) }}" style="font-weight:600;color:var(--text);text-decoration:none;">{{ it.title }}</a></td>
+              <td><span class="badge badge-{{ it.item_type }}">{{ it.item_type|capitalize }}</span></td>
+              <td style="font-size:.8rem;color:var(--text-muted);">{{ it.reporter.email if it.reporter else '—' }}</td>
+              <td><span class="badge {% if it.status=='claimed' %}badge-claimed{% elif it.status=='active' %}badge-active{% else %}badge-pending{% endif %}">{{ it.status }}</span></td>
+              <td style="font-size:.8rem;color:var(--text-muted);">{{ it.date_reported.strftime('%b %d, %Y') }}</td>
+              <td>
+                <form method="post" action="{{ url_for('admin_verify_item', item_id=it.id) }}" style="display:inline;">
+                  <button name="action" value="approve" class="btn btn-sm btn-success">✔</button>
+                  <button name="action" value="remove" class="btn btn-sm" style="background:rgba(244,63,94,.1);color:var(--brand);border:1px solid rgba(244,63,94,.2);">✕</button>
+                </form>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- Users tab -->
+<div class="tab-panel" id="ap-1">
+  <div class="dash-table-card">
+    <div class="dash-table-header">Registered Users</div>
+    <table class="dash-table">
+      <thead><tr><th>ID</th><th>Name</th><th>Email</th><th>Phone</th><th>Role</th><th>Joined</th></tr></thead>
+      <tbody>
+        {% for u in users %}
+          <tr>
+            <td style="color:var(--text-muted);font-size:.8rem;">#{{ u.id }}</td>
+            <td style="font-weight:600;">{{ u.name }}</td>
+            <td style="font-size:.85rem;color:var(--text-muted);">{{ u.email }}</td>
+            <td style="font-size:.85rem;color:var(--text-muted);">{{ u.phone or '—' }}</td>
+            <td>{% if u.is_admin %}<span class="badge" style="background:rgba(139,92,246,.12);color:#7c3aed;border:1px solid rgba(139,92,246,.25);">👑 Admin</span>{% else %}<span class="badge badge-active">User</span>{% endif %}</td>
+            <td style="font-size:.8rem;color:var(--text-muted);">{{ u.created_at.strftime('%b %d, %Y') }}</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Claims tab -->
+<div class="tab-panel" id="ap-2">
+  <div class="dash-table-card">
+    <div class="dash-table-header">
+      All Claims
+      <a href="{{ url_for('all_claims') }}" class="btn btn-secondary btn-sm">Full View</a>
+    </div>
+    <div style="overflow-x:auto;">
+      <table class="dash-table">
+        <thead><tr><th>ID</th><th>Item</th><th>Claimant</th><th>Status</th><th>Date</th><th>Actions</th></tr></thead>
+        <tbody>
+          {% for c in claims %}
+            <tr>
+              <td style="color:var(--text-muted);font-size:.8rem;">#{{ c.id }}</td>
+              <td><a href="{{ url_for('item_detail', item_id=c.item.id) }}" style="font-weight:600;color:var(--text);text-decoration:none;">{{ c.item.title }}</a></td>
+              <td style="font-size:.85rem;color:var(--text-muted);">{{ c.claimant.email if c.claimant else '—' }}</td>
+              <td><span class="badge badge-{{ c.status }}">{{ c.status|capitalize }}</span></td>
+              <td style="font-size:.8rem;color:var(--text-muted);">{{ c.created_at.strftime('%b %d, %Y') }}</td>
+              <td>
+                <form method="post" action="{{ url_for('claim_action', claim_id=c.id) }}" style="display:inline;">
+                  <button name="action" value="approve" class="btn btn-sm btn-success">Approve</button>
+                  <button name="action" value="reject" class="btn btn-sm" style="background:rgba(244,63,94,.1);color:var(--brand);border:1px solid rgba(244,63,94,.2);">Reject</button>
+                </form>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+{% block extra_js %}
+<script>
+function switchTab(n){
+  document.querySelectorAll('.tab').forEach((t,i)=>t.classList.toggle('active',i===n));
+  document.querySelectorAll('.tab-panel').forEach((p,i)=>p.classList.toggle('active',i===n));
+}
+</script>
+{% endblock %}

@@ -1,0 +1,99 @@
+{% extends 'base.html' %}
+{% block title %}Report Missing Item — LostLink{% endblock %}
+{% block content %}
+<div style="max-width:640px;margin:0 auto;">
+  <div style="margin-bottom:1.5rem;">
+    <div style="display:inline-flex;align-items:center;gap:.4rem;background:rgba(244,63,94,.1);border:1px solid rgba(244,63,94,.25);color:var(--brand);font-size:.75rem;font-weight:700;letter-spacing:.05em;padding:.3rem .75rem;border-radius:9999px;margin-bottom:.75rem;">
+      🔍 REPORT MISSING
+    </div>
+    <h1 style="font-size:1.85rem;font-weight:900;letter-spacing:-.03em;margin-bottom:.35rem;">Lost something?</h1>
+    <p class="text-muted">Fill in the details below and we'll look for potential matches automatically.</p>
+  </div>
+
+  <div class="card">
+    <div class="card-body" style="padding:1.75rem;">
+      <form method="POST" action="{{ url_for('report_missing') }}" enctype="multipart/form-data"
+            style="display:flex;flex-direction:column;gap:1.1rem;">
+        {{ form.hidden_tag() }}
+
+        <div>
+          <label class="form-label">Item Name *</label>
+          {{ form.title(class="form-input", placeholder="e.g. Black Leather Wallet", id="title") }}
+        </div>
+
+        <div>
+          <label class="form-label">Description</label>
+          {{ form.description(class="form-textarea", placeholder="Colour, brand, unique marks, serial number…", id="description") }}
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">
+          <div>
+            <label class="form-label">Category</label>
+            {{ form.category(class="form-input form-select", id="category") }}
+          </div>
+          <div>
+            <label class="form-label">Date Lost</label>
+            {{ form.date_lost_found(class="form-input", id="date_lost") }}
+          </div>
+        </div>
+
+        <div>
+          <label class="form-label">Last Known Location *</label>
+          {{ form.location(class="form-input", placeholder="Library 2nd floor, Hostel Block A…", id="location") }}
+        </div>
+
+        <div>
+          <label class="form-label">Contact Details</label>
+          {{ form.contact_details(class="form-input", placeholder="Email or phone number", id="contact") }}
+        </div>
+
+        <!-- Image upload -->
+        <div>
+          <label class="form-label">Photo (optional)</label>
+          <div id="drop-zone" style="border:2px dashed var(--border);border-radius:.65rem;padding:1.5rem;text-align:center;cursor:pointer;transition:border-color var(--transition);background:var(--surface2);"
+               onclick="document.getElementById('image-input').click()">
+            <div id="drop-content">
+              <div style="font-size:2rem;margin-bottom:.4rem;">📷</div>
+              <p style="font-size:.85rem;color:var(--text-muted);">Click to upload or drag & drop</p>
+              <p style="font-size:.75rem;color:var(--text-muted);">PNG, JPG, GIF up to 10MB</p>
+            </div>
+            <div id="preview-container" style="display:none;"></div>
+          </div>
+          <input id="image-input" name="image" type="file" accept="image/*" style="display:none;"/>
+        </div>
+
+        <button type="submit" class="btn btn-primary btn-lg" style="justify-content:center;margin-top:.25rem;" id="submit-report">
+          🔍 Submit Missing Report
+        </button>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}
+{% block extra_js %}
+<script>
+const input = document.getElementById('image-input');
+const dropZone = document.getElementById('drop-zone');
+const previewContainer = document.getElementById('preview-container');
+const dropContent = document.getElementById('drop-content');
+
+function showPreview(file){
+  const reader = new FileReader();
+  reader.onload = e => {
+    dropContent.style.display = 'none';
+    previewContainer.style.display = 'block';
+    previewContainer.innerHTML = `<img src="${e.target.result}" style="max-height:160px;border-radius:.5rem;object-fit:contain;"/>
+      <p style="font-size:.75rem;color:var(--text-muted);margin-top:.4rem;">${file.name}</p>`;
+  };
+  reader.readAsDataURL(file);
+}
+input.addEventListener('change', e => { if(e.target.files[0]) showPreview(e.target.files[0]); });
+dropZone.addEventListener('dragover', e=>{ e.preventDefault(); dropZone.style.borderColor='var(--brand)'; });
+dropZone.addEventListener('dragleave', ()=>{ dropZone.style.borderColor='var(--border)'; });
+dropZone.addEventListener('drop', e=>{
+  e.preventDefault(); dropZone.style.borderColor='var(--border)';
+  const f = e.dataTransfer.files[0];
+  if(f){ const dt = new DataTransfer(); dt.items.add(f); input.files = dt.files; showPreview(f); }
+});
+</script>
+{% endblock %}
